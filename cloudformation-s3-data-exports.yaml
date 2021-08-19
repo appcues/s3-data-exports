@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Appcues S3 Cloudformation template
+Conditions:
+  HasBucketName: !Not
+    - !Equals
+      - Ref: BucketName
+      - ""
+Parameters:
+  BucketName:
+    Description: "Optional: Bucket Name"
+    Type: String
+    Default: ""
+Resources:
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !If
+        - HasBucketName
+        - !Ref BucketName
+        - !Ref "AWS::NoValue"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+  BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Sid: GrantPutObjectToAppcues
+            Effect: Allow
+            Principal:
+              AWS: "121185820226"
+            Action: "s3:PutObject"
+            Resource: !Join
+              - ""
+              - - "arn:aws:s3:::"
+                - !Ref S3Bucket
+                - /*
+            Condition:
+              StringEquals:
+                "s3:x-amz-acl": bucket-owner-full-control
+      Bucket: !Ref S3Bucket
